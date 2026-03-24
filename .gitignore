@@ -1,0 +1,19 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+dist/
+build/
+
+# Data (optional)
+data/
+
+# Model (optional if large)
+*.pth
+
+# OS
+.DS_Store
+Thumbs.db
