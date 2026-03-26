@@ -477,7 +477,7 @@ export default function App() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const response = await fetch("https://osteoporosis-backend.onrender.com", {
+      const response = await fetch("https://osteoporosis-backend.onrender.com/predict", {
         method: "POST",
         body: formData,
       });

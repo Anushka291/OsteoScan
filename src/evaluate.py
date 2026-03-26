@@ -2,12 +2,21 @@ import os
 import torch
 import torch.nn as nn
 import pandas as pd
+import numpy as np
 
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, models
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    roc_auc_score,
+    roc_curve
+)
+from sklearn.preprocessing import label_binarize
+import matplotlib.pyplot as plt
 
 # -----------------------
 # PATHS
@@ -70,7 +79,7 @@ test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 # -----------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-model = models.resnet18(weights=None)  # IMPORTANT
+model = models.resnet18(weights=None)
 model.fc = nn.Linear(model.fc.in_features, 3)
 
 model.load_state_dict(torch.load("./model/model.pth", map_location=device))
@@ -82,6 +91,7 @@ model.eval()
 # -----------------------
 all_preds = []
 all_labels = []
+all_probs = []
 
 with torch.no_grad():
     for images, labels in test_loader:
@@ -89,10 +99,17 @@ with torch.no_grad():
         labels = labels.to(device)
 
         outputs = model(images)
-        preds = torch.argmax(outputs, dim=1)
+
+        probs = torch.softmax(outputs, dim=1)
+        preds = torch.argmax(probs, dim=1)
 
         all_preds.extend(preds.cpu().numpy())
         all_labels.extend(labels.cpu().numpy())
+        all_probs.extend(probs.cpu().numpy())
+
+# Convert to numpy
+all_labels = np.array(all_labels)
+all_probs = np.array(all_probs)
 
 # -----------------------
 # METRICS
@@ -102,3 +119,33 @@ acc = accuracy_score(all_labels, all_preds)
 print("Accuracy:", acc)
 print("\nClassification Report:\n", classification_report(all_labels, all_preds))
 print("\nConfusion Matrix:\n", confusion_matrix(all_labels, all_preds))
+
+# -----------------------
+# AUC-ROC (MULTI-CLASS)
+# -----------------------
+# One-hot encode labels
+y_true_bin = label_binarize(all_labels, classes=[0, 1, 2])
+
+auc_score = roc_auc_score(y_true_bin, all_probs, multi_class='ovr')
+
+print("\nAUC (Overall):", auc_score)
+
+# -----------------------
+# ROC CURVE PLOT
+# -----------------------
+plt.figure(figsize=(7, 6))
+
+for i in range(3):
+    fpr, tpr, _ = roc_curve(y_true_bin[:, i], all_probs[:, i])
+    plt.plot(fpr, tpr, label=f'Class {i}')
+
+# Random baseline
+plt.plot([0, 1], [0, 1], 'k--')
+
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("ROC Curve")
+plt.legend()
+plt.grid()
+
+plt.show()
