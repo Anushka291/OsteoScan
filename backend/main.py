@@ -203,6 +203,17 @@ async def predict(file: UploadFile = File(...)):
 
         logger.info(f"Prediction: {label} | risk_score={risk_score:.3f} | file={file.filename}")
 
+        width, height = pil_image.size
+        image_format = file.filename.split(".")[-1].upper()
+
+        # Transform for model
+        input_image = transform(pil_image).unsqueeze(0).to(device)
+
+        with torch.no_grad():
+            outputs = model(input_image)
+            probs = torch.softmax(outputs, dim=1)
+            pred = torch.argmax(probs, dim=1).item()
+
         return {
             "prediction":   label,
             "class":        pred_class,
@@ -217,6 +228,12 @@ async def predict(file: UploadFile = File(...)):
             "model_info": {
                 "architecture": "ResNet-18",
                 "device": str(device),
+            },
+            "image_info": {
+                "width": width,
+                "height": height,
+                "resolution": f"{width} x {height}",
+                "format": image_format
             }
         }
 
