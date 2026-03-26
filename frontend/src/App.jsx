@@ -637,6 +637,16 @@ export default function App() {
                   <div className="heatmap-label">Grad-CAM · Model Attention Overlay</div>
                 </div>
 
+                {result && result.image_info && (
+                  <div style={{ marginTop: "20px" }}>
+                  <h3>Image Info:</h3>
+                  <p>Width: {result.image_info.width}px</p>
+                  <p>Height: {result.image_info.height}px</p>
+                  <p>Resolution: {result.image_info.resolution}</p>
+                  <p>Format: {result.image_info.format}</p>
+                  </div>
+                )}  
+
                 {/* Disclaimer */}
                 <div className="disclaimer">
                   <svg viewBox="0 0 24 24" strokeWidth="1.5">
